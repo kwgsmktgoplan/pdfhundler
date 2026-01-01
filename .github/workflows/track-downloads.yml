@@ -48,28 +48,12 @@ jobs:
           }
           EOF
 
-          # 各リリースのダウンロード数を集計
-          TOTAL_DOWNLOADS=0
+          # 各リリースのダウンロード数を表示
+          echo "📊 リリースごとのダウンロード数:"
+          jq -r '.[] | "\(.tag_name): \([.assets[].download_count] | add // 0) downloads"' releases.json
 
-          # jqを使ってリリース情報を解析
-          jq -c '.[]' releases.json | while read -r release; do
-            TAG_NAME=$(echo "$release" | jq -r '.tag_name')
-            RELEASE_NAME=$(echo "$release" | jq -r '.name')
-            PUBLISHED_AT=$(echo "$release" | jq -r '.published_at')
-
-            # 各アセットのダウンロード数を集計
-            RELEASE_DOWNLOADS=0
-            echo "$release" | jq -c '.assets[]' | while read -r asset; do
-              ASSET_NAME=$(echo "$asset" | jq -r '.name')
-              DOWNLOAD_COUNT=$(echo "$asset" | jq -r '.download_count')
-              RELEASE_DOWNLOADS=$((RELEASE_DOWNLOADS + DOWNLOAD_COUNT))
-
-              echo "  - ${ASSET_NAME}: ${DOWNLOAD_COUNT} downloads"
-            done
-
-            echo "Release ${TAG_NAME}: ${RELEASE_DOWNLOADS} downloads"
-            TOTAL_DOWNLOADS=$((TOTAL_DOWNLOADS + RELEASE_DOWNLOADS))
-          done
+          # 合計ダウンロード数を計算（jqで直接計算）
+          TOTAL_DOWNLOADS=$(jq '[.[] | [.assets[].download_count] | add // 0] | add' releases.json)
 
           echo "total_downloads=${TOTAL_DOWNLOADS}" >> $GITHUB_OUTPUT
           echo ""
